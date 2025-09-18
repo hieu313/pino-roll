@@ -1,167 +1,167 @@
-"use strict";
+'use strict'
 
-const { once } = require("events");
-const { stat, readFile } = require("fs/promises");
-const { join } = require("path");
-const { test, beforeEach } = require("tap");
-const dayjs = require("dayjs");
+const { once } = require('events')
+const { stat, readFile } = require('fs/promises')
+const { join } = require('path')
+const { test, beforeEach } = require('tap')
+const dayjs = require('dayjs')
 
-const { buildStream, cleanAndCreateFolder, sleep } = require("./utils");
+const { buildStream, cleanAndCreateFolder, sleep } = require('./utils')
 
-const logFolder = join("logs", "date-format-option", "roll");
+const logFolder = join('logs', 'date-format-option', 'roll')
 
-beforeEach(() => cleanAndCreateFolder(logFolder));
+beforeEach(() => cleanAndCreateFolder(logFolder))
 
-test("rotate file with date format based on frequency", async ({
+test('rotate file with date format based on frequency', async ({
   ok,
-  rejects,
+  rejects
 }) => {
-  const file = join(logFolder, "log");
+  const file = join(logFolder, 'log')
   const stream = await buildStream({
-    frequency: "hourly",
+    frequency: 'hourly',
     file,
-    dateFormat: "YYYY-MM-DD-HH",
-  });
-  stream.write("logged message #1\n");
-  stream.write("logged message #2\n");
-  stream.end();
+    dateFormat: 'YYYY-MM-DD-HH'
+  })
+  stream.write('logged message #1\n')
+  stream.write('logged message #2\n')
+  stream.end()
 
-  const fileName = `${file}.${dayjs().format("YYYY-MM-DD-HH")}`;
-  const content = await readFile(`${fileName}.1.log`, "utf8");
-  ok(content.includes("#1"), "first file contains first log");
-  ok(content.includes("#2"), "first file contains second log");
-  rejects(stat(`${fileName}.2`), "no other files created");
-});
+  const fileName = `${file}.${dayjs().format('YYYY-MM-DD-HH')}`
+  const content = await readFile(`${fileName}.1.log`, 'utf8')
+  ok(content.includes('#1'), 'first file contains first log')
+  ok(content.includes('#2'), 'first file contains second log')
+  rejects(stat(`${fileName}.2`), 'no other files created')
+})
 
-test("rotate file based on custom time and date format", async ({
+test('rotate file based on custom time and date format', async ({
   ok,
   notOk,
-  rejects,
+  rejects
 }) => {
-  const file = join(logFolder, "log");
-  await sleep(100 - (Date.now() % 100));
-  const fileName = `${file}.${dayjs().format("YYYY-MM-DD-HH")}`;
+  const file = join(logFolder, 'log')
+  await sleep(100 - (Date.now() % 100))
+  const fileName = `${file}.${dayjs().format('YYYY-MM-DD-HH')}`
   const stream = await buildStream({
     frequency: 100,
     file,
-    dateFormat: "YYYY-MM-DD-HH",
-  });
-  stream.write("logged message #1\n");
-  stream.write("logged message #2\n");
-  await sleep(110);
-  stream.write("logged message #3\n");
-  stream.write("logged message #4\n");
-  await sleep(110);
-  stream.end();
-  await stat(`${fileName}.1.log`);
-  let content = await readFile(`${fileName}.1.log`, "utf8");
-  ok(content.includes("#1"), "first file contains first log");
-  ok(content.includes("#2"), "first file contains second log");
-  notOk(content.includes("#3"), "first file does not contains third log");
-  await stat(`${fileName}.2.log`);
-  content = await readFile(`${fileName}.2.log`, "utf8");
-  ok(content.includes("#3"), "first file contains third log");
-  ok(content.includes("#4"), "first file contains fourth log");
-  notOk(content.includes("#2"), "first file does not contains second log");
-  await stat(`${fileName}.3.log`);
-  rejects(stat(`${fileName}.4.log`), "no other files created");
-});
+    dateFormat: 'YYYY-MM-DD-HH'
+  })
+  stream.write('logged message #1\n')
+  stream.write('logged message #2\n')
+  await sleep(110)
+  stream.write('logged message #3\n')
+  stream.write('logged message #4\n')
+  await sleep(110)
+  stream.end()
+  await stat(`${fileName}.1.log`)
+  let content = await readFile(`${fileName}.1.log`, 'utf8')
+  ok(content.includes('#1'), 'first file contains first log')
+  ok(content.includes('#2'), 'first file contains second log')
+  notOk(content.includes('#3'), 'first file does not contains third log')
+  await stat(`${fileName}.2.log`)
+  content = await readFile(`${fileName}.2.log`, 'utf8')
+  ok(content.includes('#3'), 'first file contains third log')
+  ok(content.includes('#4'), 'first file contains fourth log')
+  notOk(content.includes('#2'), 'first file does not contains second log')
+  await stat(`${fileName}.3.log`)
+  rejects(stat(`${fileName}.4.log`), 'no other files created')
+})
 
-test("rotate file based on size and date format", async ({ ok, rejects }) => {
-  const file = join(logFolder, "log");
+test('rotate file based on size and date format', async ({ ok, rejects }) => {
+  const file = join(logFolder, 'log')
   const fileWithDate = `${file}.${dayjs()
-    .startOf("hour")
-    .format("YYYY-MM-DD-HH")}`;
-  const size = 20;
+    .startOf('hour')
+    .format('YYYY-MM-DD-HH')}`
+  const size = 20
   const stream = await buildStream({
-    frequency: "hourly",
+    frequency: 'hourly',
     size: `${size}b`,
     file,
-    dateFormat: "YYYY-MM-DD-HH",
-  });
-  stream.write("logged message #1\n");
-  stream.write("logged message #2\n");
-  await once(stream, "ready");
-  stream.write("logged message #3\n");
-  stream.end();
-  let stats = await stat(`${fileWithDate}.1.log`);
+    dateFormat: 'YYYY-MM-DD-HH'
+  })
+  stream.write('logged message #1\n')
+  stream.write('logged message #2\n')
+  await once(stream, 'ready')
+  stream.write('logged message #3\n')
+  stream.end()
+  let stats = await stat(`${fileWithDate}.1.log`)
   ok(
     size <= stats.size && stats.size <= size * 2,
     `first file size: ${size} <= ${stats.size} <= ${size * 2}`
-  );
-  stats = await stat(`${fileWithDate}.2.log`);
-  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`);
-  rejects(stat(`${fileWithDate}.3.log`), "no other files created");
-});
+  )
+  stats = await stat(`${fileWithDate}.2.log`)
+  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`)
+  rejects(stat(`${fileWithDate}.3.log`), 'no other files created')
+})
 
-test("rotate file based on size and date format with custom frequency", async ({
+test('rotate file based on size and date format with custom frequency', async ({
   ok,
-  rejects,
+  rejects
 }) => {
-  const file = join(logFolder, "log");
+  const file = join(logFolder, 'log')
   const fileWithDate = `${file}.${dayjs()
-    .startOf("hour")
-    .format("YYYY-MM-DD-HH")}`;
-  const size = 20;
+    .startOf('hour')
+    .format('YYYY-MM-DD-HH')}`
+  const size = 20
   const stream = await buildStream({
     frequency: 1000,
     size: `${size}b`,
     file,
-    dateFormat: "YYYY-MM-DD-HH",
-  });
-  stream.write("logged message #1\n");
-  stream.write("logged message #2\n");
-  await once(stream, "ready");
-  stream.write("logged message #3\n");
-  await sleep(1010);
-  stream.write("logged message #4\n");
-  stream.end();
+    dateFormat: 'YYYY-MM-DD-HH'
+  })
+  stream.write('logged message #1\n')
+  stream.write('logged message #2\n')
+  await once(stream, 'ready')
+  stream.write('logged message #3\n')
+  await sleep(1010)
+  stream.write('logged message #4\n')
+  stream.end()
 
-  let stats = await stat(`${fileWithDate}.1.log`);
+  let stats = await stat(`${fileWithDate}.1.log`)
   ok(
     size <= stats.size && stats.size <= size * 2,
     `first file size: ${size} <= ${stats.size} <= ${size * 2}`
-  );
-  stats = await stat(`${fileWithDate}.2.log`);
-  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`);
-  stats = await stat(`${fileWithDate}.3.log`);
-  const content = await readFile(`${fileWithDate}.3.log`, "utf8");
-  ok(content.includes("#4"), "Rotated file should have the log");
-  rejects(stat(`${file}.4.log`), "no other files created");
-});
+  )
+  stats = await stat(`${fileWithDate}.2.log`)
+  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`)
+  stats = await stat(`${fileWithDate}.3.log`)
+  const content = await readFile(`${fileWithDate}.3.log`, 'utf8')
+  ok(content.includes('#4'), 'Rotated file should have the log')
+  rejects(stat(`${file}.4.log`), 'no other files created')
+})
 
-test("rotate file based on size and date format without frequency", async ({
+test('rotate file based on size and date format without frequency', async ({
   ok,
-  rejects,
+  rejects
 }) => {
-  const file = join(logFolder, "log");
-  const size = 20;
+  const file = join(logFolder, 'log')
+  const size = 20
   const stream = await buildStream({
     size: `${size}b`,
     file,
-    dateFormat: "YYYY-MM-DD-HH",
-  });
-  stream.write("logged message #1\n");
-  stream.write("logged message #2\n");
-  await once(stream, "ready");
-  stream.write("logged message #3\n");
-  stream.end();
-  let stats = await stat(`${file}.1.log`);
+    dateFormat: 'YYYY-MM-DD-HH'
+  })
+  stream.write('logged message #1\n')
+  stream.write('logged message #2\n')
+  await once(stream, 'ready')
+  stream.write('logged message #3\n')
+  stream.end()
+  let stats = await stat(`${file}.1.log`)
   ok(
     size <= stats.size && stats.size <= size * 2,
     `first file size: ${size} <= ${stats.size} <= ${size * 2}`
-  );
-  stats = await stat(`${file}.2.log`);
-  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`);
-  rejects(stat(`${file}.3.log`), "no other files created");
-});
+  )
+  stats = await stat(`${file}.2.log`)
+  ok(stats.size <= size, `second file size: ${stats.size} <= ${size}`)
+  rejects(stat(`${file}.3.log`), 'no other files created')
+})
 
-test("throw on invalid date format", async ({ rejects }) => {
+test('throw on invalid date format', async ({ rejects }) => {
   rejects(
-    buildStream({ file: join(logFolder, "log"), dateFormat: "yyyy%MM%dd" }),
+    buildStream({ file: join(logFolder, 'log'), dateFormat: 'yyyy%MM%dd' }),
     {
-      message: "yyyy%MM%dd contains invalid characters",
+      message: 'yyyy%MM%dd contains invalid characters'
     },
-    "throws on invalid date format"
-  );
-});
+    'throws on invalid date format'
+  )
+})
