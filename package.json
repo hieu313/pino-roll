@@ -1,7 +1,7 @@
 {
   "name": "pino-roll",
   "version": "3.1.0",
-  "description": "A Pino transport that automatically rolls your log files",
+  "description": "A Pino transport that automatically rolls your log files (forked from mcollina/pino-roll to use dayjs instead of date-fns)",
   "main": "pino-roll.js",
   "scripts": {
     "dev": "tap -w -R spec",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcollina/pino-roll.git"
+    "url": "git+https://github.com/hieu313/pino-roll.git"
   },
   "keywords": [
     "pino",
@@ -23,7 +23,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.10",
     "sonic-boom": "^4.0.1"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
-'use strict'
+"use strict";
 
-const SonicBoom = require('sonic-boom')
+const SonicBoom = require("sonic-boom");
 const {
   buildFileName,
   removeOldFiles,
@@ -14,8 +14,8 @@ const {
   parseDate,
   validateDateFormat,
   sanitizeFile,
-  validateFileName
-} = require('./lib/utils')
+  validateFileName,
+} = require("./lib/utils");
 
 /**
  * A function that returns a string path to the base file name
@@ -52,7 +52,7 @@ const {
  * @property {LimitOptions} limit? - strategy used to remove oldest files when rotating them.
  *
  * @property {string} dateFormat? - When specified, appends the current date/time to the file name in the provided format.
- * Supports date formats from `date-fns` (see: https://date-fns.org/v4.1.0/docs/format), such as 'yyyy-MM-dd' and 'yyyy-MM-dd-hh'.
+ * Supports date formats from `dayjs` (see: https://day.js.org/docs/en/display/format), such as 'YYYY-MM-DD' and 'YYYY-MM-DD-HH'.
  */
 
 /**
@@ -83,70 +83,77 @@ module.exports = async function ({
   dateFormat,
   ...opts
 } = {}) {
-  validateLimitOptions(limit)
-  validateDateFormat(dateFormat)
-  validateFileName(file)
-  const frequencySpec = parseFrequency(frequency)
+  validateLimitOptions(limit);
+  validateDateFormat(dateFormat);
+  validateFileName(file);
+  const frequencySpec = parseFrequency(frequency);
 
-  let date = parseDate(dateFormat, frequencySpec, true)
-  const sanitizedFile = sanitizeFile(file)
-  file = sanitizedFile.file
-  extension = sanitizedFile.extension
+  let date = parseDate(dateFormat, frequencySpec, true);
+  const sanitizedFile = sanitizeFile(file);
+  file = sanitizedFile.file;
+  extension = sanitizedFile.extension;
 
-  let number = await detectLastNumber(file, frequencySpec?.start, extension)
-  let fileName = buildFileName(file, date, number, extension)
-  const createdFileNames = [fileName]
-  let currentSize = await getFileSize(fileName)
-  const maxSize = parseSize(size)
+  let number = await detectLastNumber(file, frequencySpec?.start, extension);
+  let fileName = buildFileName(file, date, number, extension);
+  const createdFileNames = [fileName];
+  let currentSize = await getFileSize(fileName);
+  const maxSize = parseSize(size);
 
-  const destination = new SonicBoom({ ...opts, dest: fileName })
+  const destination = new SonicBoom({ ...opts, dest: fileName });
 
   if (symlink) {
-    createSymlink(fileName)
+    createSymlink(fileName);
   }
 
-  let rollTimeout
+  let rollTimeout;
   if (frequencySpec) {
-    destination.once('close', () => {
-      clearTimeout(rollTimeout)
-    })
-    scheduleRoll()
+    destination.once("close", () => {
+      clearTimeout(rollTimeout);
+    });
+    scheduleRoll();
   }
 
   if (maxSize) {
-    destination.on('write', writtenSize => {
-      currentSize += writtenSize
+    destination.on("write", (writtenSize) => {
+      currentSize += writtenSize;
       if (fileName === destination.file && currentSize >= maxSize) {
-        currentSize = 0
-        fileName = buildFileName(file, date, ++number, extension)
+        currentSize = 0;
+        fileName = buildFileName(file, date, ++number, extension);
         // delay to let the destination finish its write
-        destination.once('drain', roll)
+        destination.once("drain", roll);
       }
-    })
+    });
   }
 
-  function roll () {
-    destination.reopen(fileName)
+  function roll() {
+    destination.reopen(fileName);
     if (symlink) {
-      createSymlink(fileName)
+      createSymlink(fileName);
     }
     if (limit) {
-      removeOldFiles({ ...limit, baseFile: file, dateFormat, extension, createdFileNames, newFileName: fileName })
+      removeOldFiles({
+        ...limit,
+        baseFile: file,
+        dateFormat,
+        extension,
+        createdFileNames,
+        newFileName: fileName,
+      });
     }
   }
 
-  function scheduleRoll () {
-    clearTimeout(rollTimeout)
+  function scheduleRoll() {
+    clearTimeout(rollTimeout);
     rollTimeout = setTimeout(() => {
-      const prevDate = date
-      date = parseDate(dateFormat, frequencySpec)
-      if (dateFormat && date && date !== prevDate) number = 0
-      fileName = buildFileName(file, date, ++number, extension)
-      roll()
-      frequencySpec.next = getNext(frequency)
-      scheduleRoll()
-    }, frequencySpec.next - Date.now()).unref()
+      const prevDate = date;
+      date = parseDate(dateFormat, frequencySpec);
+      if (dateFormat && date && date !== prevDate) number = 0;
+      fileName = buildFileName(file, date, ++number, extension);
+      roll();
+      frequencySpec.next = getNext(frequency);
+      scheduleRoll();
+    }, frequencySpec.next - Date.now()).unref();
   }
 
-  return destination
-}
+  return destination;
+};
